@@ -4,7 +4,13 @@
 
 LingoBreeze is a vocabulary management app built with Flutter, Firebase Firestore, and a simple Node.js backend.
 
+## Screenshots
 
+### Home Screen
+![Home Screen](screenshots/home.png)
+
+### Add Word Bottom Sheet
+![Add Word Bottom Sheet](screenshots/add_word.png)
 
 \## Features
 
