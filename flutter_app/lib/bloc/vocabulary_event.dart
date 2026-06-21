@@ -2,6 +2,8 @@ abstract class VocabularyEvent {}
 
 class LoadWordsEvent extends VocabularyEvent {}
 
+class FetchWordsFromApiEvent extends VocabularyEvent {}
+
 class SaveWordEvent extends VocabularyEvent {
   final String word;
   final String meaning;

@@ -11,6 +11,11 @@ class VocabularyLoaded extends VocabularyState {
   VocabularyLoaded(this.words);
 }
 
+class ApiWordsLoaded extends VocabularyState {
+  final List<WordModel> apiWords;
+  ApiWordsLoaded(this.apiWords);
+}
+
 class VocabularyError extends VocabularyState {
   final String message;
   VocabularyError(this.message);

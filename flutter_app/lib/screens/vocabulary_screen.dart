@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/vocabulary_bloc.dart';
 import '../bloc/vocabulary_event.dart';
 import '../bloc/vocabulary_state.dart';
+import '../models/word_model.dart';
 import '../widgets/word_card.dart';
 
 class VocabularyScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
   final _wordController = TextEditingController();
   final _meaningController = TextEditingController();
   final _translationController = TextEditingController();
+  List<WordModel> _cachedWords = [];
 
   @override
   void dispose() {
@@ -107,6 +109,70 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
     );
   }
 
+  void _showApiWordsSuggestions(BuildContext context, List<dynamic> apiWords) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(8),
+                child: Text(
+                  'Suggested Words',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: apiWords.length,
+                  itemBuilder: (context, index) {
+                    final word = apiWords[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      child: ListTile(
+                        title: Text(word.word ?? 'Unknown'),
+                        subtitle: Text(word.meaning ?? 'No meaning'),
+                        trailing: Icon(
+                          Icons.check_circle_outline,
+                          color: Colors.grey[400],
+                        ),
+                        onTap: () {
+                          context.read<VocabularyBloc>().add(
+                            SaveWordEvent(
+                              word: word.word ?? '',
+                              meaning: word.meaning ?? '',
+                              translation: word.translation ?? '',
+                            ),
+                          );
+                          Navigator.pop(sheetContext);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Saved: ${word.word}'),
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,8 +184,22 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
         centerTitle: true,
         backgroundColor: const Color(0xFF6C63FF),
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_download),
+            onPressed: () {
+              context.read<VocabularyBloc>().add(FetchWordsFromApiEvent());
+            },
+            tooltip: 'Fetch suggestions from API',
+          ),
+        ],
       ),
-      body: BlocBuilder<VocabularyBloc, VocabularyState>(
+      body: BlocConsumer<VocabularyBloc, VocabularyState>(
+        listener: (context, state) {
+          if (state is ApiWordsLoaded) {
+            _showApiWordsSuggestions(context, state.apiWords);
+          }
+        },
         builder: (context, state) {
           if (state is VocabularyLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -133,6 +213,7 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
             );
           }
           if (state is VocabularyLoaded) {
+            _cachedWords = state.words;
             if (state.words.isEmpty) {
               return Center(
                 child: Column(
@@ -162,6 +243,39 @@ class _VocabularyScreenState extends State<VocabularyScreen> {
               itemCount: state.words.length,
               itemBuilder: (context, index) {
                 return WordCard(word: state.words[index]);
+              },
+            );
+          }
+          if (state is ApiWordsLoaded) {
+            if (_cachedWords.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.book_outlined,
+                      size: 64,
+                      color: Colors.grey,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "You haven't saved any words yet.",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: () => _showAddWordSheet(context),
+                      child: const Text('Add Your First Word'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              itemCount: _cachedWords.length,
+              itemBuilder: (context, index) {
+                return WordCard(word: _cachedWords[index]);
               },
             );
           }

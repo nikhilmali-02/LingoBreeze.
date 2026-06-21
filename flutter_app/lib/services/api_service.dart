@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/word_model.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://10.0.2.2:3000';
+  static const String _baseUrl = 'http://192.168.0.104:3000';
 
   Future<List<WordModel>> fetchWords() async {
     final response = await http.get(Uri.parse('$_baseUrl/words'));
